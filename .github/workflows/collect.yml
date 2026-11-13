@@ -1,0 +1,70 @@
+# Збирач дописів стрічки «Кабінету мешканця».
+#
+# Боти працюють тут, на комп'ютерах GitHub, а не на малому сервері сайту:
+# там вони забирали весь процесор і сайт лягав. Кожне завдання — окремий
+# паралельний запуск зі своїм часом; готові дописи йдуть на сервер одним
+# пакетом. Ключ сервера — лише в секреті ARCHIVE_TOKEN (у журналах не видно).
+#
+# collector.mjs збирається з приватного репозиторію сайту
+# (smart-hromada-cloudflare/archive-server/collector-src.ts) і кладеться сюди.
+
+name: Збирач
+
+on:
+  schedule:
+    - cron: "7 * * * *"      # щогодини: тривоги й оповіщення
+    - cron: "23 */2 * * *"   # раз на 2 год: новини, місця, інтернет
+    - cron: "41 */3 * * *"   # раз на 3 год: знімок погоди
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Завдання: all, weather, places, alerts, news, inet"
+        default: all
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      jobs: ${{ steps.p.outputs.jobs }}
+    steps:
+      - id: p
+        run: |
+          case "${{ github.event.schedule }}" in
+            "7 * * * *")     echo 'jobs=["alerts"]' >> "$GITHUB_OUTPUT" ;;
+            "23 */2 * * *")  echo 'jobs=["news","places","inet"]' >> "$GITHUB_OUTPUT" ;;
+            "41 */3 * * *")  echo 'jobs=["weather"]' >> "$GITHUB_OUTPUT" ;;
+            *)
+              j="${{ github.event.inputs.job || 'all' }}"
+              if [ "$j" = "all" ]; then echo 'jobs=["weather","places","alerts","news","inet"]' >> "$GITHUB_OUTPUT"
+              else echo "jobs=[\"$j\"]" >> "$GITHUB_OUTPUT"; fi ;;
+          esac
+
+  collect:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJson(needs.plan.outputs.jobs) }}
+    concurrency:
+      group: collect-${{ matrix.job }}
+      cancel-in-progress: false
+    name: ${{ matrix.job }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Збір і відправка
+        env:
+          ARCHIVE_TOKEN: ${{ secrets.ARCHIVE_TOKEN }}
+          SERVER: https://api.smarthromada.com
+          JOB: ${{ matrix.job }}
+          MAX_MINUTES: "14"
+          INET_STEPS: "200"
+          WORK_DIR: ${{ runner.temp }}/collector-data
+        run: node collector.mjs
