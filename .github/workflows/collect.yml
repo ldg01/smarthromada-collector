@@ -65,6 +65,6 @@ jobs:
           SERVER: https://api.smarthromada.com
           JOB: ${{ matrix.job }}
           MAX_MINUTES: "14"
-          INET_STEPS: "200"
+          INET_STEPS: "800"
           WORK_DIR: ${{ runner.temp }}/collector-data
         run: node collector.mjs
