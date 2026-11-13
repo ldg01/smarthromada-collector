@@ -12,7 +12,7 @@ name: Збирач
 
 on:
   schedule:
-    - cron: "7 * * * *"      # щогодини: тривоги, оповіщення й розклад ботів (усі громади)
+    - cron: "5 * * * *"      # щогодини: тривоги, оповіщення й розклад ботів (усі громади)
     - cron: "23 */2 * * *"   # раз на 2 год: новини, місця, інтернет (6 частин громад + GDELT)
     - cron: "41 */3 * * *"   # раз на 3 год: знімок погоди
     - cron: "55 4 * * 1"     # щопонеділка: «пульс», щоб GitHub не вимкнув розклад
@@ -37,7 +37,7 @@ jobs:
       - id: p
         run: |
           case "${{ github.event.schedule }}" in
-            "7 * * * *")     echo 'jobs=["alerts","schedule"]' >> "$GITHUB_OUTPUT" ;;
+            "5 * * * *")     echo 'jobs=["alerts","schedule"]' >> "$GITHUB_OUTPUT" ;;
             "23 */2 * * *")  echo 'jobs=["news","places","gdelt","raion:0/4","raion:1/4","raion:2/4","raion:3/4","oblast","inet:0/6","inet:1/6","inet:2/6","inet:3/6","inet:4/6","inet:5/6"]' >> "$GITHUB_OUTPUT" ;;
             "41 */3 * * *")  echo 'jobs=["weather"]' >> "$GITHUB_OUTPUT" ;;
             "55 4 * * 1")    echo 'jobs=["alerts"]' >> "$GITHUB_OUTPUT" ;;
