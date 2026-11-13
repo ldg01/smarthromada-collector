@@ -15,14 +15,18 @@ on:
     - cron: "7 * * * *"      # щогодини: тривоги й оповіщення
     - cron: "23 */2 * * *"   # раз на 2 год: новини, місця, інтернет (6 частин громад + GDELT)
     - cron: "41 */3 * * *"   # раз на 3 год: знімок погоди
+    - cron: "55 4 * * 1"     # щопонеділка: «пульс», щоб GitHub не вимкнув розклад
   workflow_dispatch:
     inputs:
       job:
-        description: "Завдання: all, weather, places, alerts, news, gdelt, inet:0/6"
+        description: "Завдання: all, weather, places, alerts, news, gdelt, oblast, raion:0/4, inet:0/6"
         default: all
 
 permissions:
   contents: read
+
+# GitHub вимикає розклад у репозиторії без змін 60 днів. Щопонеділка
+# завдання keepalive записує сюди файл зі станом — і розклад живе роками.
 
 jobs:
   plan:
@@ -34,11 +38,12 @@ jobs:
         run: |
           case "${{ github.event.schedule }}" in
             "7 * * * *")     echo 'jobs=["alerts"]' >> "$GITHUB_OUTPUT" ;;
-            "23 */2 * * *")  echo 'jobs=["news","places","gdelt","inet:0/6","inet:1/6","inet:2/6","inet:3/6","inet:4/6","inet:5/6"]' >> "$GITHUB_OUTPUT" ;;
+            "23 */2 * * *")  echo 'jobs=["news","places","gdelt","raion:0/4","raion:1/4","raion:2/4","raion:3/4","oblast","inet:0/6","inet:1/6","inet:2/6","inet:3/6","inet:4/6","inet:5/6"]' >> "$GITHUB_OUTPUT" ;;
             "41 */3 * * *")  echo 'jobs=["weather"]' >> "$GITHUB_OUTPUT" ;;
+            "55 4 * * 1")    echo 'jobs=["alerts"]' >> "$GITHUB_OUTPUT" ;;
             *)
               j="${{ github.event.inputs.job || 'all' }}"
-              if [ "$j" = "all" ]; then echo 'jobs=["weather","places","alerts","news","gdelt","inet:0/6","inet:1/6","inet:2/6","inet:3/6","inet:4/6","inet:5/6"]' >> "$GITHUB_OUTPUT"
+              if [ "$j" = "all" ]; then echo 'jobs=["weather","places","alerts","news","gdelt","raion:0/4","raion:1/4","raion:2/4","raion:3/4","oblast","inet:0/6","inet:1/6","inet:2/6","inet:3/6","inet:4/6","inet:5/6"]' >> "$GITHUB_OUTPUT"
               else echo "jobs=[\"$j\"]" >> "$GITHUB_OUTPUT"; fi ;;
           esac
 
@@ -68,3 +73,19 @@ jobs:
           INET_STEPS: "2000"
           WORK_DIR: ${{ runner.temp }}/collector-data
         run: node collector.mjs
+
+  keepalive:
+    if: github.event.schedule == '55 4 * * 1'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Пульс
+        run: |
+          date -u +"%Y-%m-%dT%H:%M:%SZ" > .last-alive
+          git config user.name "collector-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .last-alive
+          git commit -m "Пульс збирача" || exit 0
+          git push
