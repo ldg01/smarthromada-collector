@@ -38,7 +38,7 @@ jobs:
         run: |
           case "${{ github.event.schedule }}" in
             "5 * * * *")     echo 'jobs=["alerts","schedule:0/6","schedule:1/6","schedule:2/6","schedule:3/6","schedule:4/6","schedule:5/6"]' >> "$GITHUB_OUTPUT" ;;
-            "23 */2 * * *")  echo 'jobs=["news","places","gdelt","raion:0/4","raion:1/4","raion:2/4","raion:3/4","oblast","inet:0/6","inet:1/6","inet:2/6","inet:3/6","inet:4/6","inet:5/6"]' >> "$GITHUB_OUTPUT" ;;
+            "23 */2 * * *")  echo 'jobs=["schedule:0/6","schedule:1/6","schedule:2/6","schedule:3/6","schedule:4/6","schedule:5/6","news","places","gdelt","raion:0/4","raion:1/4","raion:2/4","raion:3/4","oblast","inet:0/6","inet:1/6","inet:2/6","inet:3/6","inet:4/6","inet:5/6"]' >> "$GITHUB_OUTPUT" ;;
             "41 */3 * * *")  echo 'jobs=["weather"]' >> "$GITHUB_OUTPUT" ;;
             "55 4 * * 1")    echo 'jobs=["alerts"]' >> "$GITHUB_OUTPUT" ;;
             *)
